@@ -1,0 +1,424 @@
+---
+title: "The iPhone 6 Plus: A Blessing for Apple?"
+author: "Raian Rith"
+date: "5/31/2021"
+output: html_document
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, fig.height = 4, fig.width = 6 )
+```
+
+
+```{r}
+library(tidyverse) 
+library(rvest)
+```
+
+```{r}
+page <- read_html("https://en.wikipedia.org/wiki/IPhone")
+page_sales <- read_html("https://en.wikipedia.org/wiki/List_of_best-selling_mobile_phones#2020")
+page_batlife <- read_html ("https://www.knowyourmobile.com/phones/iphone-specs-all-models-compared/")
+```
+
+
+
+```{r}
+
+#Model Name Column for iPhone Data Frame
+
+Model <- page %>% 
+  html_nodes(".wikitable tr~ tr+ tr th:nth-child(1)") %>% 
+  html_text() %>%
+  as.character() 
+
+
+Model <- Model %>%
+  str_replace("\n", "") %>%
+  str_replace("Legend:", "a") %>% 
+  str_replace("max", "aa")
+
+Model_df <- Model %>% as.data.frame() 
+Model_df <- Model_df[-c(1, 23), ]
+Model_df <- Model_df %>% as.data.frame() 
+
+colnames(Model_df) <- c("Model")
+
+```
+
+```{r}
+
+#Year Column for iPhone Data Frame
+
+Year <- page %>% 
+  html_nodes("tr+ tr td:nth-child(3) , tr:nth-child(24) th") %>% 
+  html_text() %>%
+  as.character() 
+
+Year <- Year %>% 
+  str_split(",") %>% 
+  map(2, default = NA) %>% 
+  str_split("[(]") %>% 
+  map(1, default = NA)  %>%
+  str_trim( side = c("both", "left", "right"))
+
+Year <- Year %>% as.numeric()
+
+Year_df <- Year %>% as.data.frame()
+Year_df <- Year_df[-c(21, 23, 24,25), ]
+Year_df <- Year_df %>% as.data.frame() 
+
+colnames(Year_df) <- c("Year")
+```
+
+
+```{r}
+
+#Price Column for iPhone Data Frame
+
+Price <- page %>% 
+  html_nodes("td:nth-child(9)") %>% 
+  html_text() %>%
+  as.character() 
+
+Price <- Price %>%
+  str_replace("\n", "") %>% 
+  str_remove_all("\n") %>%
+  str_remove_all("[*]") %>% 
+  str_sub(start= -4) %>% 
+  str_remove_all("[$]") %>% 
+  str_sub(start= -4)
+
+Price <- Price %>% as.numeric()
+
+Price_df <- Price  %>% as.data.frame() 
+
+colnames(Price_df) <- c("Price")
+```
+
+
+```{r}
+
+# Total Sales Data frame
+
+Sales <- page_sales %>% 
+  html_nodes("ul:nth-child(70) li:nth-child(4) , ul:nth-child(70) li:nth-child(1) , ul:nth-child(70) li:nth-child(2) , ul:nth-child(68) li:nth-child(2) , ul:nth-child(68) li:nth-child(1) , ul:nth-child(66) li:nth-child(1) , ul:nth-child(66) li:nth-child(2) , ul:nth-child(64) li:nth-child(2) , ul:nth-child(64) li:nth-child(1) , ul:nth-child(62) li:nth-child(1) , ul:nth-child(60) li~ li+ li , ul:nth-child(58) li:nth-child(1) , ul:nth-child(56) li:nth-child(3) , ul:nth-child(54) li:nth-child(1) , ul:nth-child(52) li:nth-child(1) , ul:nth-child(50) li:nth-child(2) , ul:nth-child(48) li:nth-child(2) , ul:nth-child(44) li:nth-child(2) , ul:nth-child(41) li:nth-child(7)") %>% 
+  html_text() %>%
+  as.character() 
+
+Sales <- Sales %>%
+  str_split(",") %>%
+  map(2, default = NA) %>%
+  str_split(" ") %>%
+  map(2, default = NA) %>%
+  as.numeric()
+
+Sales_df <- Sales %>% as.data.frame()
+colnames(Sales_df) <- c("Sales in Million")
+
+```
+
+```{r}
+
+#Change names for the iPhone final data frame
+
+iphone <- Year_df %>% cbind(Model_df) %>% cbind(Price_df)
+
+iphone <-  iphone[-7, ]
+iphone <- iphone [-10, ]
+
+iphone_df <- iphone %>% cbind(Sales_df)
+iphone_df <- iphone_df [-1, ]
+iphone_df <- iphone_df [-1, ]
+
+ iphone_df[3, 2] <- "iPhone 4s"
+ iphone_df[5, 2] <- "iPhone 5s"
+ iphone_df[6, 2] <- "iPhone 6 Plus"
+ iphone_df[7, 2] <- "iPhone 6s Plus"
+ iphone_df[8, 2] <- "iPhone 7 Plus"
+ iphone_df[9, 2] <- "iPhone 8 Plus"
+ iphone_df[11, 2] <- "iPhone XS Max"
+ iphone_df[14, 2] <- "iPhone 11 Pro Max"
+ iphone_df[15, 2] <- "iPhone SE (2020)"
+ iphone_df[16, 2] <- "iPhone 12"
+ iphone_df[17, 2] <- "iPhone 12 Pro Max"
+
+ 
+# #switch 2 rows 
+tmp_row  <- iphone_df[11,]
+iphone_df[11,]  <- iphone_df[12,]
+iphone_df[12,]  <- tmp_row
+
+
+```
+
+
+
+```{r}
+
+#Battery Life column for Battery Life Data
+
+bat_life <- page_batlife %>% 
+  html_nodes(".ninja_table_row_6 td") %>% 
+  html_text() %>%
+  as.character() %>% 
+  as.data.frame()
+
+colnames(bat_life) <- c("Battery_Life")
+
+batLife_df <- bat_life[!grepl("Batt",bat_life$Battery_Life),] %>% str_remove_all("mAh")
+
+batLife_df <- batLife_df %>% as.numeric() 
+batLife_df <- batLife_df %>% as.data.frame()
+
+colnames(batLife_df) <- c("Battery Life (mAh)")
+
+```
+
+
+```{r}
+
+#(Name) column for the Battery Life Data frame 
+
+bat_name <- page_batlife %>% 
+  html_nodes("#AdThrive_Content_14_desktop+ h2 , #AdThrive_Content_13_desktop+ h2 , #AdThrive_Content_12_desktop+ h2 , #AdThrive_Content_11_desktop+ h2 , #AdThrive_Content_10_desktop+ h2 , #AdThrive_Content_9_desktop+ h2 , #AdThrive_Content_8_desktop+ h2 , #AdThrive_Content_7_desktop+ h2 , #AdThrive_Content_6_desktop+ h2 , #AdThrive_Content_5_desktop+ h2 , #AdThrive_Content_4_desktop+ h2 , #AdThrive_Content_3_desktop+ h2 , .semantic_ui+ h2 , #AdThrive_Content_2_desktop+ h2 , h2:nth-child(8)
+") %>% 
+  html_text() %>%
+  as.character() %>% 
+  str_remove_all("Specs") %>%
+  str_trim( side = c("both", "left", "right"))
+
+bat_name_df <- bat_name %>% as.data.frame()
+
+colnames(bat_name_df) <- c("Name")
+
+```
+
+```{r}
+
+#Removing the models I dont need from Battery Life Data Frame 
+
+Battery_Final <- bat_name_df %>% cbind(batLife_df)
+
+Battery_Final <- Battery_Final [-6, ]
+Battery_Final <- Battery_Final [-7, ]
+Battery_Final <- Battery_Final [-9, ]
+Battery_Final <- Battery_Final [-10, ]
+Battery_Final <- Battery_Final [-13, ]
+Battery_Final <- Battery_Final [-15, ]
+Battery_Final <- Battery_Final [-18, ]
+Battery_Final <- Battery_Final [-18, ]
+Battery_Final <- Battery_Final [-19, ]
+Battery_Final <- Battery_Final [-7, ]
+
+Battery_Final[17, 2] <- 3687
+```
+
+
+```{r}
+
+#Joining iPhone Final Dataframe with Battery Life Final Data Frame
+
+Final_df <- left_join(iphone_df, Battery_Final, by = c("Model" = "Name"))
+Final_df <- Final_df %>% select(Year, Model, `Battery Life (mAh)`, "Launch Price" = Price, `Sales in Million`)
+Final_df
+```
+```{r}
+#Custom Theme
+
+theme_custom <- function (base_size = 11, base_family = "") {
+    theme_bw() %+replace% 
+    theme(
+      panel.grid.major  = element_line(color = "white"),
+      panel.background = element_rect(fill = "grey96"),
+      panel.border = element_rect(color = "white", fill = NA),
+      axis.line = element_line(color = "white"),
+      axis.ticks = element_line(color = "white"),
+      axis.text = element_text(color = "slateblue4")
+      )
+}
+```
+
+
+```{r}
+
+#Shiny App
+
+library(tidyverse)
+library(shiny)
+library(forcats)
+library(ggthemes)
+library(ggrepel)
+
+
+ui <- fluidPage(
+  
+  titlePanel("Flagship iPhones' Launch Price, Sales, & Battery Life"),
+  
+  fluidRow(
+    
+    column(4,
+           varSelectInput("variable", 
+                        "Select Variable (X variable for Graph Type 1 / Y variable for Graph Type 2):", 
+           data = Final_df %>% select( `Sales in Million`, `Launch Price`, `Battery Life (mAh)`))),
+    
+    column(4,
+           selectInput("theme", 
+                        "Select Graph Theme: ", 
+            choices = c("Theme 1", "Theme 2", "Theme 3", "Theme 4","Theme 5", "Theme 6", "Theme 7", "Theme 8", "Theme 9", "Theme 10"))),
+    
+    column(4,
+           selectInput("line_color", 
+                        "Select Line Color (for Type 1 Graph Only): ", 
+            choices = c("Grey", "Red", "White", "Blue", "Black","Pink", "Orange", "Yellow", "Green", "Purple"))),
+    
+     column(4,
+           selectInput("type", 
+                        "Select Graph Type: ", 
+          choices = c("Type 1: Model Statistic Graph", "Type 2: Variable Correlation Scatterplot"))),
+    
+     column(4,
+           varSelectInput("variable_x", 
+                        "Select X variable (for type 2) ", 
+           data = Final_df %>% select( Year, `Launch Price`, `Sales in Million`, `Battery Life (mAh)`))),
+    
+     sliderInput(inputId = "size", 
+                  label = "Label Size",
+                  min = 3.5,
+                  max = 6,
+                  step = .5,
+                  value = 3.5),
+    
+  
+  fluidRow(
+      plotOutput("plot")
+    )
+))
+
+server <- function(input, output) {
+  
+  output$plot <- renderPlot({
+    size <- input$size
+    
+   if(input$type == "Type 1: Model Statistic Graph"){
+     
+     Final_df %>%
+  arrange(!!input$variable) %>%   
+  mutate(Model = fct_reorder(Model, !!input$variable)) %>%
+  ggplot( aes(x=Model, y=!!input$variable)) +
+    geom_segment( aes(xend=Model, yend=0), 
+                  color = if(input$line_color == "Grey"){
+        "grey"
+                  } else if(input$line_color == "Red"){
+        "red"
+                  }else if(input$line_color == "White"){
+        "white"
+                  }else if(input$line_color == "Blue"){
+        "blue"
+                  }else if(input$line_color == "Black"){
+        "black"
+                  }else if(input$line_color == "Pink"){
+        "pink"
+                  }else if(input$line_color == "Orange"){
+        "orange"
+                  }else if(input$line_color == "Yellow"){
+        "yellow"
+                  }else if(input$line_color == "Green"){
+        "green"
+                  }else if(input$line_color == "Purple"){
+        "purple"
+      }) +
+    coord_flip() +
+    theme_bw() +
+    xlab("") +
+      geom_label(aes(label = signif(!!input$variable)), nudge_y = 2, color = "black" , cex=size) +
+      if(input$theme == "Theme 1"){
+        theme_custom()
+      } else if (input$theme == "Theme 2"){
+        theme_bw()
+      } else if (input$theme == "Theme 3"){
+        theme_wsj()
+      } else if (input$theme == "Theme 4"){
+        theme_solarized()
+      } else if (input$theme == "Theme 5"){
+        theme_economist()
+      } else if (input$theme == "Theme 6"){
+        theme_few()
+      } else if (input$theme == "Theme 7"){
+        theme_hc()
+      } else if (input$theme == "Theme 8"){
+        theme_dark()
+      } else if (input$theme == "Theme 9"){
+        theme_tufte()
+      } else if (input$theme == "Theme 10"){
+        theme_foundation()
+      } 
+     
+   }else{
+     
+      Final_df %>%
+  ggplot( aes(x=!!input$variable_x, y=!!input$variable)) +
+    geom_point() +
+       geom_smooth(method="loess", se=FALSE, fullrange=FALSE) +
+      geom_text_repel(aes(label = (Final_df$Model)), force = 4, cex=size) +
+      if(input$theme == "Theme 1"){
+        theme_custom() 
+      } else if (input$theme == "Theme 2"){
+        theme_bw()
+      } else if (input$theme == "Theme 3"){
+        theme_wsj()
+      } else if (input$theme == "Theme 4"){
+        theme_solarized()
+      } else if (input$theme == "Theme 5"){
+        theme_economist()
+      } else if (input$theme == "Theme 6"){
+        theme_few()
+      } else if (input$theme == "Theme 7"){
+        theme_hc()
+      } else if (input$theme == "Theme 8"){
+        theme_dark()
+      } else if (input$theme == "Theme 9"){
+        theme_tufte()
+      } else if (input$theme == "Theme 10"){
+        theme_foundation()
+      } 
+   }
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+
+```
+
+## Shiny App Discussion
+
+
+  Imagine a world without iPhones, what would it be like? Over the past seven years, the iPhone has gone through many transformations becoming one of the most popular cell phones in the United States and the world. The iPhone has changed the smart phone market. Nearly 25% of people in the U.S. have an iPhone. The iPhone has changed a lot over the past decade. In this article, we gathered data regarding the battery life, launch prices, and total sales for all the flagship iPhones for each year starting 2009.
+  
+  The shiny app  helps users visualize these 3 variables in various ways using 6 different user inputs. Firstly, the user gets to switch between 2 kinds of graphs. The default graph is a scatterplot connected by segments which helps users visualize the Sales, Battery Life, and Launch Price for each type of model of iPhones. The screen-shot below shows the first type of graph with Sales in the x axis and each models of iPhone in the y axis. According to the data that we have, as we can see, the graph shows that iPhone SE (2020) helped Apple earn 308.1 million USD, followed iPhone 6 plus which can be argued to be the most sold iPhones till now. This is surprising because, even though the iPhone 6 plus was released in the year 2014 it has made more than twice as much as any other model of iPhone other than iPhone SE(2020) and the iPhone SE(2020) which was released in 2020 made 1.5 times the amount of money that iPhone 6 plus did in just about 2 years. Some other interesting facts that we see when we change the variables for the first type of graphs are that in terms of battery life iPhone SE was the top model and in terms of launch price the iPhone SE was the lowest priced model. These facts help in understanding why the sales of iPhone SE's were so high. 
+
+![Sample Image](Screenshot.png){width=500px}
+
+  Our findings from Type 1 Graphs can be further explained by Type 2 graphs which once chosen by the user, shows the co-rreletations between the variables which the user chooses. We can see how over the years iPhone went through a constant increase in sales till the year 2014. However, if we see the screen-shot below more closely, we see that the had it not been for iPhone 6 plus, then the curve of best fit over the years would actually go down during the year 2011 to 2016 and we would get a dip in the blue curve that we see in the screen-shot which would look somewhat like the red curve. However, as we see from the screen-shot below, the very high sales value of iphone 6 plus alone during the year 2014 pushes the curve upward and makes it seem like Apple has been making a constant increase in sales over the years 2011 to 2014. But, as we see from both the graphs during the years 2012 and 2013 Apple released iPhone 5 and 5s which which in fact had less sales than its predecessors. Due to iPhone 6 plus being a big hit, it can be argued that iPhone 6 plus actually covered for the loss in sales that Apple made during 2012 and 2013.  
+  
+  
+![Sample Image](Screenshot2.png){width=500px}
+  
+  In conclusion, with the data that we use in this article, and the graphs that one can see in the shiny app, one can argue that iPhone 6 Plus was one of the best flagships model that Apple has ever produced. However, one can not conclusively say anything with just the amount of data that we have here, since there is a lot of factors that is involved in determining the sales performances of iPhones as well as determining which iPhones are the best in the lineup. Nevertheless, the shiny app offers a lot of freedom to users to play with the data and visualize it in numerous way to find out interesting information about the top selling flagships for iPhone in each year starting from 2009 to 2020.  
+  
+## Technical Report 
+
+What were the biggest challenges you faced, and how did you overcome them? Your audience for this part is me (the instructor), and your goal shoud be to show me that you have achieved a deep understanding and ease-of-use with the topics you learned in this course.
+
+For me, the biggest challenge was to build a shiny app that will not only just take in inputs which are fun to play with but to also incorporate inputs that will provide users multiple ways to interpret the data that I have. This was the biggest challenge since my data set was a fairly simple one with not too many variables either. However, I am very happy with how it turned out in the end, and I believe my app provides users a very fun and informative experience. 
+
+Firstly, I had to scrape from not only one but 3 websites to get the data that I wanted. That was challenging too. I had to select single observations one by one for a few websites which made my laptop very slow and I wasn't sure if it could take it. But it did. Then I had to extract the data that I wanted from the html texts that I scraped. This was also not too easy. I used all the functions that we learned in class like str_remove, str_split, str_replace, etc. However, these alone were not enough to extract the data I wanted. So, I explored more and found functions like str_sub, str_trim, and grepl which I used to extract the data. Then, I made separate one column data sets for each variable with the data that I extracted and turned them into numeric and character depending on the type of variables. I also used the colnames function to name these columns. I know, I could have just used apply/lapply later, but, making them numeric or character during the very start using as.numeric or as.character made most sense to me. 
+
+Then, I had to remove certain observations and change the names of some observations by using the [-x,-y] way of removing observation to get the same number of rows for each of the separate variable data sets. I then used cbind to join all these variables together and form a final data set that I used for my data set. In life 150 - 152, I used a fairly simple but interesting way of switching rows within a data frame. I had to do that since I had to make sure that prior to joining all the variables each of my dataset had the same format of iPhone models over the years. So that when I join the datasets the values of each variable belong to the right model of iPhone and not just any other iPhone. That was tricky too. While joining, I managed to make 2 datasets have a common key between them so that I could use the join commands that we learnt in class. This was not necessary but I wanted to learn and implement it so I did it.
+
+For the shiny app that I made, I went above and beyond what we were taught in class. I kept trying new things till I found the perfect mix. I used 6 different inputs, some of which are basic but the others are more complicated. I used the else/else_if functions in multiple places which helped me make interactive input options which will let users make two kind of plots, change the x and y variables according to their will, and also change the themes of the graphs, size of the labels and color of the segments. This shiny app helped me learn a lot about shiny and about how to use conditional functions within shiny as well as functions like geom_text_repel and factoring variables to make ascending/descending segment graphs. I have also learnt how to make my own custom theme by making one called theme_custom. 
+
+Overall, I believe that this project has helped me achiev a deep understanding and ease-of-use with the topics I learned in this course. I used all the topics that we learnt in the course in this project and even more than that. This was by far, one of the best and interesting projects I have made. 
