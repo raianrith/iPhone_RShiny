@@ -13,3 +13,7 @@
 
 **Type 2 Graph**
 <img width="1440" alt="Screenshot2" src="https://user-images.githubusercontent.com/61523138/120231946-17d87f00-c218-11eb-82f3-cfce7faa3a06.png">
+
+**Conclusion**
+
+In conclusion, with the data that we use in this article, and the graphs that one can see in the shiny app, one can argue that iPhone 6 Plus was one of the best flagships model that Apple has ever produced. However, one can not conclusively say anything with just the amount of data that we have here, since there is a lot of factors that is involved in determining the sales performances of iPhones as well as determining which iPhones are the best in the lineup. Nevertheless, the shiny app offers a lot of freedom to users to play with the data and visualize it in numerous way to find out interesting information about the top selling flagships for iPhone in each year starting from 2009 to 2020.  
